@@ -1,0 +1,57 @@
+hi12
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ReactDemo1</title>
+</head>
+<body>
+<div id="ice_container">
+	
+<textarea id="codehere">    hi, i am textarea.  </textarea>
+<button id="send"> send</button>
+
+</div>
+<script>
+	
+var ws = new WebSocket("ws://127.0.0.1:8089/wstest");
+
+ws.onopen = function(evt) { 
+  console.log("Connection open ..."); 
+  ws.send("Hello WebSockets!");
+};
+
+ws.onmessage = function(evt) {
+  document.getElementById("codehere").value = evt.data;
+
+};
+
+ws.onclose = function(evt) {
+  console.log("Connection closed.");
+};      
+
+
+document.getElementById('send').onclick=function(){
+
+    ws.send(document.getElementById("codehere").value );
+
+
+}
+
+document.getElementById('codehere').onkeyup =function(){
+
+    ws.send(document.getElementById("codehere").value );
+
+
+}
+
+
+</script>
+
+
+
+
+</body>
+</html>
+

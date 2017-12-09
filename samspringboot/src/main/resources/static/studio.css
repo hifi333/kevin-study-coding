@@ -1,0 +1,52 @@
+.samstudio {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+header,
+footer {
+  flex: 1;
+    background: #000099;
+
+}
+
+.samstudiobody {
+  display: flex;
+  flex: 20;
+
+}
+
+.codeeditor {
+  flex: 1;
+ /*  background: #909090; */
+}
+
+
+
+.facetalk {
+  /* 两个边栏的宽度设为12em */
+  flex: 0 0 210px;
+  background: #000000; 
+
+}
+
+.codeitem {
+    /* 两个边栏的宽度设为12em */
+
+    flex: 0 0 80px;
+  /* 导航放到最左边 */
+  order: -1;
+  background: #000000; 
+
+}
+
+
+#editorwraper,#sameditor{
+  outline:none;resize:none;border:none;margin:0; padding:0;width:100%; height:100%;
+/* background: #909090; */
+}
+
+#editorwraper{
+height:92%;
+}

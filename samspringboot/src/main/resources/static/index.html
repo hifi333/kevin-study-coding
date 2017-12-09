@@ -1,0 +1,378 @@
+<!doctype html>
+
+<title>CodeEditpr by CodeMirror</title>
+<meta charset="utf-8"/>
+
+<link rel=stylesheet href="lib/codemirror.css">
+<link rel=stylesheet href="doc/docs.css">
+<link rel="stylesheet" href="./studio.css" type="text/css" />
+
+<link rel="stylesheet" href="vendor/bootstrap.min.css">
+<script src="AgoraRTCSDK-2.0.0.js"></script>
+<script src="vendor/jquery.js"></script>
+
+<script src="lib/codemirror.js"></script>
+<script src="mode/xml/xml.js"></script>
+<script src="mode/javascript/javascript.js"></script>
+<script src="mode/css/css.js"></script>
+<script src="mode/htmlmixed/htmlmixed.js"></script>
+<script src="addon/edit/matchbrackets.js"></script>
+<script src="mode/clike/clike.js"></script>
+
+
+<!-- script src="doc/activebookmark.js"></script-->
+
+<style>
+  .CodeMirror { height: auto; border: 1px solid #ddd; }
+  .CodeMirror-scroll { max-height: 600px; }
+  .CodeMirror pre { padding-left: 7px; line-height: 1.25; }
+</style>
+
+
+
+<body class="samstudio">
+  <header>header div</header>
+  <div class="samstudiobody">
+    <nav class="codeitem">
+      <div id="div_device" class="panel panel-default">
+      <div class="select">
+      <label for="audioSource">Audio source: </label><select id="audioSource"></select>
+      </div>
+      <div class="select">
+      <label for="videoSource">Video source: </label><select id="videoSource"></select>
+      </div>
+      </div>
+
+<div id="div_join" class="panel panel-default">
+<div class="panel-body">
+Key: <input id="key" type="text" value="" size="36"></input>
+Channel: <input id="channel" type="text" value="1000" size="4"></input>
+Host: <input id="video" type="checkbox" checked></input>
+<button id="join" class="btn btn-primary" onclick="join()">Join</button>
+<button id="leave" class="btn btn-primary" onclick="leave()">Leave</button>
+<button id="publish" class="btn btn-primary" onclick="publish()">Publish</button>
+<button id="unpublish" class="btn btn-primary" onclick="unpublish()">Unpublish</button>
+</div>
+</div>
+
+    </nav>
+    <main class="codeeditor">
+      
+    <div id="editorwraper">
+    <textarea id="sameditor">  hi this is code editor </textarea>   
+    </div>
+    </main>
+
+    <aside class="facetalk">
+      <div id="video" style="margin:0 auto;">
+    <div id="agora_local" style="float:right;width:210px;height:147px;display:inline-block;"></div>
+    </div>
+    </aside>
+  </div>
+  <footer>log</footer>
+</body>
+
+
+<script>
+    var editor = CodeMirror.fromTextArea(document.getElementById("sameditor"), {
+      lineNumbers: true,
+      //mode: "text/html",
+      mode: "text/x-java",
+    //  mode: "text/javascript",
+
+      matchBrackets: true
+    });
+</script>
+
+
+<script type="text/javascript">
+
+
+var ws; 
+
+
+var websockinit = function(){
+
+var curWwwPath=window.document.location.href; //获取当前网址，如： http://baudu.com:8080/hello/index.jsp 
+console.log(curWwwPath);
+
+//var pathName=window.document.location.pathname; //获取主机地址之后的目录如：/hello/index.jsp 
+//var pos=curWwwPath.indexOf(pathName); 
+//var serverpath=curWwwPath.substring(0,pos); //算出主机地址，如： http://baidu.com:8080
+//console.log(serverpath);
+
+var tempstr=curWwwPath.substring(curWwwPath.indexOf("//")+2,curWwwPath.length-1);
+var serverip = tempstr.substring(0,tempstr.indexOf(":"));
+console.log("serverip:" + serverip);
+
+ ws = new WebSocket("wss://" + serverip +":8443/wstest");
+
+ws.onopen = function(evt) { 
+  console.log("Connection opened ..."); 
+};
+
+ws.onmessage = function(evt) {
+
+
+  var dataObj = JSON.parse(evt.data);  
+  if (dataObj.type == 'code') {  
+     editor.setValue(dataObj.data);
+     editor.setCursor(dataObj.cursorPos);
+   }
+};
+
+ws.onclose = function(evt) {
+  console.log("Connection closed.");
+};      
+
+
+}
+
+var send = function(data ){
+if (ws.readyState !== 1) { 
+      ws.close();
+      websockinit();  //make new connection again.
+
+      setTimeout(function() { 
+      ws.send(data);  //just init so wait 250ms and continue to send data out 
+      }, 250);
+
+  }else   //send a ping 
+  {
+      ws.send(data);
+  }
+
+}
+
+
+websockinit();
+
+
+document.getElementById('editorwraper').onkeyup =function(){
+
+    var presendingJson = {
+          type: 'code',
+          data: editor.getValue(),
+          cursorPos: editor.getCursor()
+        };
+        var sendingJson = JSON.stringify(presendingJson);
+
+    send(sendingJson);
+
+
+}
+
+
+
+
+</script>
+
+
+
+
+<script language="javascript">
+
+if(!AgoraRTC.checkSystemRequirements()) {
+  alert("browser is no support webRTC");
+}
+
+/* select Log type */
+// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.NONE);
+// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.ERROR);
+// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.WARNING);
+// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.INFO);  
+// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.DEBUG);
+
+/* simulated data to proof setLogLevel() */
+//AgoraRTC.Logger.error('this is error');
+//AgoraRTC.Logger.warning('this is warning');
+//AgoraRTC.Logger.info('this is info');
+//AgoraRTC.Logger.debug('this is debug');
+
+var client, localStream, camera, microphone;
+
+var audioSelect = document.querySelector('select#audioSource');
+var videoSelect = document.querySelector('select#videoSource');
+
+function join() {
+  document.getElementById("join").disabled = true;
+  document.getElementById("video").disabled = true;
+  var channel_key = null;
+
+  var appkey = "665da0479681474191c7ef70058d2651";
+  console.log("Init AgoraRTC client with vendor appkey: " + appkey);
+  client = AgoraRTC.createClient({mode: 'interop'});
+  client.init(appkey, function () {
+    console.log("AgoraRTC client initialized");
+    client.join(channel_key, channel.value, null, function(uid) {
+      console.log("User " + uid + " join channel successfully");
+
+      if (document.getElementById("video").checked) {
+        camera = videoSource.value;
+        microphone = audioSource.value;
+        localStream = AgoraRTC.createStream({streamID: uid, audio: true, cameraId: camera, microphoneId: microphone, video: true, screen: false});
+        //localStream = AgoraRTC.createStream({streamID: uid, audio: false, cameraId: camera, microphoneId: microphone, video: false, screen: true, extensionId: 'minllpmhdgpndnkomcoccfekfegnlikg'});
+        if (document.getElementById("video").checked) {
+          localStream.setVideoProfile('720p_3');
+          
+        }
+
+        // The user has granted access to the camera and mic.
+        localStream.on("accessAllowed", function() {
+          console.log("accessAllowed");
+        });
+
+        // The user has denied access to the camera and mic.
+        localStream.on("accessDenied", function() {
+          console.log("accessDenied");
+        });
+
+        localStream.init(function() {
+          console.log("getUserMedia successfully");
+          localStream.play('agora_local');
+
+          client.publish(localStream, function (err) {
+            console.log("Publish local stream error: " + err);
+          });
+
+          client.on('stream-published', function (evt) {
+            console.log("Publish local stream successfully");
+          });
+        }, function (err) {
+          console.log("getUserMedia failed", err);
+        });
+      }
+    }, function(err) {
+      console.log("Join channel failed", err);
+    });
+  }, function (err) {
+    console.log("AgoraRTC client init failed", err);
+  });
+
+  channelKey = "";
+  client.on('error', function(err) {
+    console.log("Got error msg:", err.reason);
+    if (err.reason === 'DYNAMIC_KEY_TIMEOUT') {
+      client.renewChannelKey(channelKey, function(){
+        console.log("Renew channel key successfully");
+      }, function(err){
+        console.log("Renew channel key failed: ", err);
+      });
+    }
+  });
+
+
+  client.on('stream-added', function (evt) {
+    var stream = evt.stream;
+    console.log("New stream added: " + stream.getId());
+    console.log("Subscribe ", stream);
+    client.subscribe(stream, function (err) {
+      console.log("Subscribe stream failed", err);
+    });
+  });
+
+  client.on('stream-subscribed', function (evt) {
+    var stream = evt.stream;
+    console.log("Subscribe remote stream successfully: " + stream.getId());
+    if ($('div#video #agora_remote'+stream.getId()).length === 0) {
+      $('div#video').append('<div id="agora_remote'+stream.getId()+'" style="float:left; width:210px;height:147px;display:inline-block;"></div>');
+    }
+    stream.play('agora_remote' + stream.getId());
+  });
+
+  client.on('stream-removed', function (evt) {
+    var stream = evt.stream;
+    stream.stop();
+    $('#agora_remote' + stream.getId()).remove();
+    console.log("Remote stream is removed " + stream.getId());
+  });
+
+  client.on('peer-leave', function (evt) {
+    var stream = evt.stream;
+    if (stream) {
+      stream.stop();
+      $('#agora_remote' + stream.getId()).remove();
+      console.log(evt.uid + " leaved from this channel");
+    }
+  });
+}
+
+function leave() {
+  document.getElementById("leave").disabled = true;
+  client.leave(function () {
+    console.log("Leavel channel successfully");
+  }, function (err) {
+    console.log("Leave channel failed");
+  });
+}
+
+function publish() {
+  document.getElementById("publish").disabled = true;
+  document.getElementById("unpublish").disabled = false;
+  client.publish(localStream, function (err) {
+    console.log("Publish local stream error: " + err);
+  });
+}
+
+function unpublish() {
+  document.getElementById("publish").disabled = false;
+  document.getElementById("unpublish").disabled = true;
+  client.unpublish(localStream, function (err) {
+    console.log("Unpublish local stream failed" + err);
+  });
+}
+
+function getDevices() {
+  AgoraRTC.getDevices(function (devices) {
+    for (var i = 0; i !== devices.length; ++i) {
+      var device = devices[i];
+      var option = document.createElement('option');
+      option.value = device.deviceId;
+      if (device.kind === 'audioinput') {
+        option.text = device.label || 'microphone ' + (audioSelect.length + 1);
+        audioSelect.appendChild(option);
+      } else if (device.kind === 'videoinput') {
+        option.text = device.label || 'camera ' + (videoSelect.length + 1);
+        videoSelect.appendChild(option);
+      } else {
+        console.log('Some other kind of source/device: ', device);
+      }
+    }
+  });
+}
+
+//audioSelect.onchange = getDevices;
+//videoSelect.onchange = getDevices;
+getDevices();
+</script>
+
+
+  <script src="keymap/vim.js"></script>
+  <script src="mode/clike/clike.js"></script>
+  <script src="mode/css/css.js"></script>
+  <script src="mode/htmlmixed/htmlmixed.js"></script>
+  <script src="mode/xml/xml.js"></script>
+  <script src="mode/php/php.js"></script>
+  <script src="mode/go/go.js"></script>
+  <script src="mode/ruby/ruby.js"></script>
+  <script src="mode/sql/sql.js"></script>
+  <script src="addon/search/searchcursor.js"></script>
+  <script src="addon/search/search.js"></script>
+  <script src="addon/dialog/dialog.js"></script>
+  <script src="addon/edit/matchbrackets.js"></script>
+  <script src="addon/edit/closebrackets.js"></script>
+  <script src="addon/comment/comment.js"></script>
+  <script src="addon/wrap/hardwrap.js"></script>
+  <script src="addon/fold/foldcode.js"></script>
+  <script src="addon/fold/brace-fold.js"></script>
+  <script src="addon/selection/active-line.js"></script>
+  <script src="addon/fold/foldcode.js"></script>
+  <script src="addon/fold/foldgutter.js"></script>
+  <script src="addon/fold/brace-fold.js"></script>
+  <script src="addon/fold/xml-fold.js"></script>
+  <script src="addon/fold/markdown-fold.js"></script>
+  <script src="addon/fold/comment-fold.js"></script>
+  <script src="addon/search/searchcursor.js"></script>
+  <script src="addon/selection/mark-selection.js"></script> 
+
+
