@@ -31,10 +31,6 @@ public class SamWebSocket1 {
     public void onOpen(Session session){
         System.out.println("client new connection:" +session.getUserProperties().toString());
         room.addElement(session);
-        System.out.println("client new connection:" +session.getQueryString());
-        System.out.println("client new connection:" +session.getId());
-        System.out.println("client new connection:" +session.getRequestURI());
-        System.out.println("client new connection:" +session.getRequestParameterMap().toString());
 
         
     }
@@ -52,12 +48,9 @@ public class SamWebSocket1 {
         for(Session se : room){
         	 
             //发送消息给远程用户
-            if(se == session)
-            	System.out.println("不发给自己：" + number1);
-            	else	
+            if(se != session)
             	{
             		se.getAsyncRemote().sendText(message);
-            		System.out.println("发送："+ number1 );
 
             	}
             number1++;

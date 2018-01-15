@@ -1,6 +1,6 @@
 <!doctype html>
 
-<title>CodeEditpr by CodeMirror</title>
+<title>Kevin.zhang & computer</title>
 <meta charset="utf-8"/>
 
 <link rel=stylesheet href="lib/codemirror.css">
@@ -18,6 +18,9 @@
 <script src="mode/htmlmixed/htmlmixed.js"></script>
 <script src="addon/edit/matchbrackets.js"></script>
 <script src="mode/clike/clike.js"></script>
+<script type="text/javascript" src="jquery-3.2.1.min.js"></script>
+
+
 
 
 <!-- script src="doc/activebookmark.js"></script-->
@@ -30,137 +33,204 @@
 
 
 
+
+<script language="javascript">
+
+  var classlogJson =null;
+  var curWwwPath=window.document.location.href; //获取当前网址，如： http://baudu.com:8080/hello/index.jsp
+  console.log(curWwwPath);
+
+  //var pathName=window.document.location.pathname; //获取主机地址之后的目录如：/hello/index.jsp
+  //var pos=curWwwPath.indexOf(pathName);
+  //var serverpath=curWwwPath.substring(0,pos); //算出主机地址，如： http://baidu.com:8080
+  //console.log(serverpath);
+
+  var tempstr=curWwwPath.substring(curWwwPath.indexOf("//")+2,curWwwPath.length-1);
+  var serverip = tempstr.substring(0,tempstr.indexOf(":"));
+  console.log("serverip:" + serverip);
+
+  function showclassloglist() {
+
+
+    var datafromRemote = $.ajax({
+      type: "GET",
+      url: "https://"+serverip+":8443/getclassloglist",
+      data: "name=garfield&age=18",
+      async: false    //同步和异步的使用方法
+    }).responseText;
+
+    //{"classloglist":[{"title":"第一堂课","content":"your codes"},{}]}
+    var aa = JSON.parse(datafromRemote);
+
+    classlogJson = aa.classloglist;
+
+    $("#classloglist").empty();
+
+    $("#classloglist").append("<p>课程复习和回顾：</p>");
+
+    $.each(classlogJson, function (n, oneclassJson) {
+      // var oneclass = "<a href='http://www.cnblogs.com')>" + oneclassJson.title +  "</a> </br>";
+
+      var oneclass=  "<a href='javascript:void(0)' onclick='loadlocalclasslog(\"" + oneclassJson.filename +"\")'>" + oneclassJson.title +  "</a> </br>";
+      $("#classloglist").append(oneclass);
+
+    });
+
+
+  }
+</script>
+
 <body class="samstudio">
-  <header>header div</header>
-  <div class="samstudiobody">
-    <nav class="codeitem">
-      <div id="div_device" class="panel panel-default">
+<header>header div</header>
+<div class="samstudiobody">
+  <nav class="codeitem">
+    <div id="div_device" class="panel panel-default">
       <div class="select">
-      <label for="audioSource">Audio source: </label><select id="audioSource"></select>
+        <label for="audioSource">Audio source: </label><select id="audioSource"></select>
       </div>
       <div class="select">
-      <label for="videoSource">Video source: </label><select id="videoSource"></select>
+        <label for="videoSource">Video source: </label><select id="videoSource"></select>
       </div>
+    </div>
+
+    <div id="div_join" class="panel panel-default">
+      <div class="panel-body">
+        Channel: <input id="channel" type="text" value="1000" size="4"></input>
+        <button id="join" class="btn btn-primary" onclick="join()">Join</button>
+        <button id="backclassroom" class="" onclick="back2Currentclassroom()">回到课堂</button>
+
       </div>
+    </div>
 
-<div id="div_join" class="panel panel-default">
-<div class="panel-body">
-Key: <input id="key" type="text" value="" size="36"></input>
-Channel: <input id="channel" type="text" value="1000" size="4"></input>
-Host: <input id="video" type="checkbox" checked></input>
-<button id="join" class="btn btn-primary" onclick="join()">Join</button>
-<button id="leave" class="btn btn-primary" onclick="leave()">Leave</button>
-<button id="publish" class="btn btn-primary" onclick="publish()">Publish</button>
-<button id="unpublish" class="btn btn-primary" onclick="unpublish()">Unpublish</button>
-</div>
-</div>
 
-    </nav>
-    <main class="codeeditor">
-      
+    <div id="classloglist" style="overflow-y:scroll;background:#FFFFFF;height:200;">
+
+    </div>
+  </nav>
+  <main class="codeeditor">
+
     <div id="editorwraper">
-    <textarea id="sameditor">  hi this is code editor </textarea>   
+      <textarea id="sameditor">  hi this is code editor </textarea>
     </div>
-    </main>
+  </main>
 
-    <aside class="facetalk">
-      <div id="video" style="margin:0 auto;">
-    <div id="agora_local" style="float:right;width:210px;height:147px;display:inline-block;"></div>
+  <aside class="facetalk">
+    <div id="video" style="margin:0 auto;">
+      <div id="agora_local" style="float:right;width:210px;height:147px;display:inline-block;"></div>
     </div>
-    </aside>
-  </div>
+
+    <textarea id="classtitle"></textarea>
+    <button id="saveclass" class="btn btn-primary" onclick="teachersaveclass()">老师写课堂大纲</button>
+    <button id="thinkclass" class="" onclick="appendstudentthinklog()">学生写课堂总结</button>
+
+  </aside>
+
+
+
+</div>
   <footer>log</footer>
 </body>
 
 
 <script>
-    var editor = CodeMirror.fromTextArea(document.getElementById("sameditor"), {
-      lineNumbers: true,
-      //mode: "text/html",
-      mode: "text/x-java",
+  var editor = CodeMirror.fromTextArea(document.getElementById("sameditor"), {
+    lineNumbers: true,
+    //mode: "text/html",
+    mode: "text/x-java",
     //  mode: "text/javascript",
 
-      matchBrackets: true
-    });
+    matchBrackets: true
+  });
+
+
+  showclassloglist();
+
+  var isCurrentclassroom = true;
+  var currentclassroomCode="";
+  var currentselectfilename="";
+  $("#saveclass").show();
+  $("#thinkclass").hide();
+
+
+
+
+
 </script>
 
 
 <script type="text/javascript">
 
 
-var ws; 
+  var ws;
 
 
-var websockinit = function(){
-
-var curWwwPath=window.document.location.href; //获取当前网址，如： http://baudu.com:8080/hello/index.jsp 
-console.log(curWwwPath);
-
-//var pathName=window.document.location.pathname; //获取主机地址之后的目录如：/hello/index.jsp 
-//var pos=curWwwPath.indexOf(pathName); 
-//var serverpath=curWwwPath.substring(0,pos); //算出主机地址，如： http://baidu.com:8080
-//console.log(serverpath);
-
-var tempstr=curWwwPath.substring(curWwwPath.indexOf("//")+2,curWwwPath.length-1);
-var serverip = tempstr.substring(0,tempstr.indexOf(":"));
-console.log("serverip:" + serverip);
-
- ws = new WebSocket("wss://" + serverip +":8443/wstest");
-
-ws.onopen = function(evt) { 
-  console.log("Connection opened ..."); 
-};
-
-ws.onmessage = function(evt) {
+  var websockinit = function(){
 
 
-  var dataObj = JSON.parse(evt.data);  
-  if (dataObj.type == 'code') {  
-     editor.setValue(dataObj.data);
-     editor.setCursor(dataObj.cursorPos);
-   }
-};
+    ws = new WebSocket("wss://" + serverip +":8443/wstest");
 
-ws.onclose = function(evt) {
-  console.log("Connection closed.");
-};      
+    ws.onopen = function(evt) {
+      console.log("Connection opened ...");
+    };
+
+    ws.onmessage = function(evt) {
 
 
-}
+      var dataObj = JSON.parse(evt.data);
+      if (dataObj.type == 'code') {
+        editor.setValue(dataObj.data);
+        editor.setCursor(dataObj.cursorPos);
 
-var send = function(data ){
-if (ws.readyState !== 1) { 
+
+        if(isCurrentclassroom)  currentclassroomCode= dataObj.data;
+
+      }
+    };
+
+    ws.onclose = function(evt) {
+      console.log("Connection closed.");
+    };
+
+
+  }
+
+  var send = function(data ){
+
+    if(isCurrentclassroom)  currentclassroomCode=  editor.getValue();
+
+
+    if (ws.readyState !== 1) {
       ws.close();
       websockinit();  //make new connection again.
 
-      setTimeout(function() { 
-      ws.send(data);  //just init so wait 250ms and continue to send data out 
+      setTimeout(function() {
+        ws.send(data);  //just init so wait 250ms and continue to send data out
       }, 250);
 
-  }else   //send a ping 
-  {
+    }else   //send a ping
+    {
       ws.send(data);
+    }
+
   }
 
-}
+
+  websockinit();
 
 
-websockinit();
-
-
-document.getElementById('editorwraper').onkeyup =function(){
+  document.getElementById('editorwraper').onkeyup =function(){
 
     var presendingJson = {
-          type: 'code',
-          data: editor.getValue(),
-          cursorPos: editor.getCursor()
-        };
-        var sendingJson = JSON.stringify(presendingJson);
+      type: 'code',
+      data: editor.getValue(),
+      cursorPos: editor.getCursor()
+    };
+    var sendingJson = JSON.stringify(presendingJson);
 
     send(sendingJson);
 
 
-}
+  }
 
 
 
@@ -172,207 +242,280 @@ document.getElementById('editorwraper').onkeyup =function(){
 
 <script language="javascript">
 
-if(!AgoraRTC.checkSystemRequirements()) {
-  alert("browser is no support webRTC");
-}
+  function teachersaveclass() {
+    var classtitle = document.getElementById("classtitle").value;
+    var classcode = editor.getValue();
 
-/* select Log type */
-// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.NONE);
-// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.ERROR);
-// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.WARNING);
-// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.INFO);  
-// AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.DEBUG);
+    console.log(classtitle + "," + classcode);
 
-/* simulated data to proof setLogLevel() */
-//AgoraRTC.Logger.error('this is error');
-//AgoraRTC.Logger.warning('this is warning');
-//AgoraRTC.Logger.info('this is info');
-//AgoraRTC.Logger.debug('this is debug');
+    var resp = $.ajax({
+      type: "POST",
+      url: "https://"+serverip+":8443/saveclasslog",
+      data: "classtitle=" + classtitle + "&classcode=" + classcode,
+      async: false    //同步和异步的使用方法
+    }).responseText;
 
-var client, localStream, camera, microphone;
+    console.log(resp);
 
-var audioSelect = document.querySelector('select#audioSource');
-var videoSelect = document.querySelector('select#videoSource');
+    document.getElementById("classtitle").value = "";
+    showclassloglist(); //refresh
+    alert("课程总结提交完成!");
 
-function join() {
-  document.getElementById("join").disabled = true;
-  document.getElementById("video").disabled = true;
-  var channel_key = null;
+  }
 
-  var appkey = "665da0479681474191c7ef70058d2651";
-  console.log("Init AgoraRTC client with vendor appkey: " + appkey);
-  client = AgoraRTC.createClient({mode: 'interop'});
-  client.init(appkey, function () {
-    console.log("AgoraRTC client initialized");
-    client.join(channel_key, channel.value, null, function(uid) {
-      console.log("User " + uid + " join channel successfully");
 
-      if (document.getElementById("video").checked) {
-        camera = videoSource.value;
-        microphone = audioSource.value;
-        localStream = AgoraRTC.createStream({streamID: uid, audio: true, cameraId: camera, microphoneId: microphone, video: true, screen: false});
-        //localStream = AgoraRTC.createStream({streamID: uid, audio: false, cameraId: camera, microphoneId: microphone, video: false, screen: true, extensionId: 'minllpmhdgpndnkomcoccfekfegnlikg'});
-        if (document.getElementById("video").checked) {
-          localStream.setVideoProfile('720p_3');
-          
+
+
+    function appendstudentthinklog() {
+      var studentthink = document.getElementById("classtitle").value;
+      var resp = $.ajax({
+        type: "POST",
+        url: "https://"+serverip+":8443/appendstudentthinklog",
+        data: "studentthink=" + studentthink + "&filename=" + currentselectfilename,
+        async: false    //同步和异步的使用方法
+      }).responseText;
+
+      console.log(resp);
+
+      document.getElementById("classtitle").value = "";
+
+      showclassloglist();//refresh
+      alert("学习总结提交完成!");
+
+    }
+
+
+  function  loadlocalclasslog(filename) {
+
+    $.each(classlogJson, function (n, oneclassJson) {
+      // var oneclass = "<a href='http://www.cnblogs.com')>" + oneclassJson.title +  "</a> </br>";
+
+      if(oneclassJson.filename == filename){
+        var classcode = oneclassJson.code;
+        editor.setValue(classcode);
+
+        isCurrentclassroom = false;
+        currentselectfilename= filename;
+        return false;
+      }
+
+    });
+
+
+    $("#saveclass").hide();
+    $("#thinkclass").show();
+
+
+  }
+
+
+  function   back2Currentclassroom() {
+
+
+    isCurrentclassroom = true;
+
+    editor.setValue(currentclassroomCode);
+
+    $("#saveclass").show();
+    $("#thinkclass").hide();
+
+
+  }
+
+
+
+  if(!AgoraRTC.checkSystemRequirements()) {
+    alert("browser is no support webRTC");
+  }
+
+  /* select Log type */
+  // AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.NONE);
+  // AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.ERROR);
+  // AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.WARNING);
+  // AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.INFO);
+  // AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.DEBUG);
+
+  /* simulated data to proof setLogLevel() */
+  //AgoraRTC.Logger.error('this is error');
+  //AgoraRTC.Logger.warning('this is warning');
+  //AgoraRTC.Logger.info('this is info');
+  //AgoraRTC.Logger.debug('this is debug');
+
+  var client, localStream, camera, microphone;
+
+  var audioSelect = document.querySelector('select#audioSource');
+  var videoSelect = document.querySelector('select#videoSource');
+
+  function join() {
+    document.getElementById("join").disabled = true;
+    var channel_key = null;
+
+    var appkey = "665da0479681474191c7ef70058d2651";
+    console.log("Init AgoraRTC client with vendor appkey: " + appkey);
+    client = AgoraRTC.createClient({mode: 'interop'});
+    client.init(appkey, function () {
+      console.log("AgoraRTC client initialized");
+      client.join(channel_key, channel.value, null, function(uid) {
+        console.log("User " + uid + " join channel successfully");
+
+        if (true) {
+          camera = videoSource.value;
+          microphone = audioSource.value;
+          localStream = AgoraRTC.createStream({streamID: uid, audio: true, cameraId: camera, microphoneId: microphone, video: true, screen: false});
+          //localStream = AgoraRTC.createStream({streamID: uid, audio: false, cameraId: camera, microphoneId: microphone, video: false, screen: true, extensionId: 'minllpmhdgpndnkomcoccfekfegnlikg'});
+          if (true) {
+            localStream.setVideoProfile('720p_3');
+
+          }
+
+          // The user has granted access to the camera and mic.
+          localStream.on("accessAllowed", function() {
+            console.log("accessAllowed");
+          });
+
+          // The user has denied access to the camera and mic.
+          localStream.on("accessDenied", function() {
+            console.log("accessDenied");
+          });
+
+          localStream.init(function() {
+            console.log("getUserMedia successfully");
+            localStream.play('agora_local');
+
+            client.publish(localStream, function (err) {
+              console.log("Publish local stream error: " + err);
+            });
+
+            client.on('stream-published', function (evt) {
+              console.log("Publish local stream successfully");
+            });
+          }, function (err) {
+            console.log("getUserMedia failed", err);
+          });
         }
+      }, function(err) {
+        console.log("Join channel failed", err);
+      });
+    }, function (err) {
+      console.log("AgoraRTC client init failed", err);
+    });
 
-        // The user has granted access to the camera and mic.
-        localStream.on("accessAllowed", function() {
-          console.log("accessAllowed");
-        });
-
-        // The user has denied access to the camera and mic.
-        localStream.on("accessDenied", function() {
-          console.log("accessDenied");
-        });
-
-        localStream.init(function() {
-          console.log("getUserMedia successfully");
-          localStream.play('agora_local');
-
-          client.publish(localStream, function (err) {
-            console.log("Publish local stream error: " + err);
-          });
-
-          client.on('stream-published', function (evt) {
-            console.log("Publish local stream successfully");
-          });
-        }, function (err) {
-          console.log("getUserMedia failed", err);
+    channelKey = "";
+    client.on('error', function(err) {
+      console.log("Got error msg:", err.reason);
+      if (err.reason === 'DYNAMIC_KEY_TIMEOUT') {
+        client.renewChannelKey(channelKey, function(){
+          console.log("Renew channel key successfully");
+        }, function(err){
+          console.log("Renew channel key failed: ", err);
         });
       }
-    }, function(err) {
-      console.log("Join channel failed", err);
     });
-  }, function (err) {
-    console.log("AgoraRTC client init failed", err);
-  });
 
-  channelKey = "";
-  client.on('error', function(err) {
-    console.log("Got error msg:", err.reason);
-    if (err.reason === 'DYNAMIC_KEY_TIMEOUT') {
-      client.renewChannelKey(channelKey, function(){
-        console.log("Renew channel key successfully");
-      }, function(err){
-        console.log("Renew channel key failed: ", err);
+
+    client.on('stream-added', function (evt) {
+      var stream = evt.stream;
+      console.log("New stream added: " + stream.getId());
+      console.log("Subscribe ", stream);
+      client.subscribe(stream, function (err) {
+        console.log("Subscribe stream failed", err);
       });
-    }
-  });
-
-
-  client.on('stream-added', function (evt) {
-    var stream = evt.stream;
-    console.log("New stream added: " + stream.getId());
-    console.log("Subscribe ", stream);
-    client.subscribe(stream, function (err) {
-      console.log("Subscribe stream failed", err);
     });
-  });
 
-  client.on('stream-subscribed', function (evt) {
-    var stream = evt.stream;
-    console.log("Subscribe remote stream successfully: " + stream.getId());
-    if ($('div#video #agora_remote'+stream.getId()).length === 0) {
-      $('div#video').append('<div id="agora_remote'+stream.getId()+'" style="float:left; width:210px;height:147px;display:inline-block;"></div>');
-    }
-    stream.play('agora_remote' + stream.getId());
-  });
+    client.on('stream-subscribed', function (evt) {
+      var stream = evt.stream;
+      console.log("Subscribe remote stream successfully: " + stream.getId());
 
-  client.on('stream-removed', function (evt) {
-    var stream = evt.stream;
-    stream.stop();
-    $('#agora_remote' + stream.getId()).remove();
-    console.log("Remote stream is removed " + stream.getId());
-  });
+      stream.play('agora_remote' + stream.getId());
+    });
 
-  client.on('peer-leave', function (evt) {
-    var stream = evt.stream;
-    if (stream) {
+    client.on('stream-removed', function (evt) {
+      var stream = evt.stream;
       stream.stop();
       $('#agora_remote' + stream.getId()).remove();
-      console.log(evt.uid + " leaved from this channel");
-    }
-  });
-}
+      console.log("Remote stream is removed " + stream.getId());
+    });
 
-function leave() {
-  document.getElementById("leave").disabled = true;
-  client.leave(function () {
-    console.log("Leavel channel successfully");
-  }, function (err) {
-    console.log("Leave channel failed");
-  });
-}
-
-function publish() {
-  document.getElementById("publish").disabled = true;
-  document.getElementById("unpublish").disabled = false;
-  client.publish(localStream, function (err) {
-    console.log("Publish local stream error: " + err);
-  });
-}
-
-function unpublish() {
-  document.getElementById("publish").disabled = false;
-  document.getElementById("unpublish").disabled = true;
-  client.unpublish(localStream, function (err) {
-    console.log("Unpublish local stream failed" + err);
-  });
-}
-
-function getDevices() {
-  AgoraRTC.getDevices(function (devices) {
-    for (var i = 0; i !== devices.length; ++i) {
-      var device = devices[i];
-      var option = document.createElement('option');
-      option.value = device.deviceId;
-      if (device.kind === 'audioinput') {
-        option.text = device.label || 'microphone ' + (audioSelect.length + 1);
-        audioSelect.appendChild(option);
-      } else if (device.kind === 'videoinput') {
-        option.text = device.label || 'camera ' + (videoSelect.length + 1);
-        videoSelect.appendChild(option);
-      } else {
-        console.log('Some other kind of source/device: ', device);
+    client.on('peer-leave', function (evt) {
+      var stream = evt.stream;
+      if (stream) {
+        stream.stop();
+        $('#agora_remote' + stream.getId()).remove();
+        console.log(evt.uid + " leaved from this channel");
       }
-    }
-  });
-}
+    });
+  }
 
-//audioSelect.onchange = getDevices;
-//videoSelect.onchange = getDevices;
-getDevices();
+  function leave() {
+    client.leave(function () {
+      console.log("Leavel channel successfully");
+    }, function (err) {
+      console.log("Leave channel failed");
+    });
+  }
+
+  function publish() {
+    client.publish(localStream, function (err) {
+      console.log("Publish local stream error: " + err);
+    });
+  }
+
+  function unpublish() {
+    client.unpublish(localStream, function (err) {
+      console.log("Unpublish local stream failed" + err);
+    });
+  }
+
+  function getDevices() {
+    AgoraRTC.getDevices(function (devices) {
+      for (var i = 0; i !== devices.length; ++i) {
+        var device = devices[i];
+        var option = document.createElement('option');
+        option.value = device.deviceId;
+        if (device.kind === 'audioinput') {
+          option.text = device.label || 'microphone ' + (audioSelect.length + 1);
+          audioSelect.appendChild(option);
+        } else if (device.kind === 'videoinput') {
+          option.text = device.label || 'camera ' + (videoSelect.length + 1);
+          videoSelect.appendChild(option);
+        } else {
+          console.log('Some other kind of source/device: ', device);
+        }
+      }
+    });
+  }
+
+  //audioSelect.onchange = getDevices;
+  //videoSelect.onchange = getDevices;
+  getDevices();
 </script>
 
 
-  <script src="keymap/vim.js"></script>
-  <script src="mode/clike/clike.js"></script>
-  <script src="mode/css/css.js"></script>
-  <script src="mode/htmlmixed/htmlmixed.js"></script>
-  <script src="mode/xml/xml.js"></script>
-  <script src="mode/php/php.js"></script>
-  <script src="mode/go/go.js"></script>
-  <script src="mode/ruby/ruby.js"></script>
-  <script src="mode/sql/sql.js"></script>
-  <script src="addon/search/searchcursor.js"></script>
-  <script src="addon/search/search.js"></script>
-  <script src="addon/dialog/dialog.js"></script>
-  <script src="addon/edit/matchbrackets.js"></script>
-  <script src="addon/edit/closebrackets.js"></script>
-  <script src="addon/comment/comment.js"></script>
-  <script src="addon/wrap/hardwrap.js"></script>
-  <script src="addon/fold/foldcode.js"></script>
-  <script src="addon/fold/brace-fold.js"></script>
-  <script src="addon/selection/active-line.js"></script>
-  <script src="addon/fold/foldcode.js"></script>
-  <script src="addon/fold/foldgutter.js"></script>
-  <script src="addon/fold/brace-fold.js"></script>
-  <script src="addon/fold/xml-fold.js"></script>
-  <script src="addon/fold/markdown-fold.js"></script>
-  <script src="addon/fold/comment-fold.js"></script>
-  <script src="addon/search/searchcursor.js"></script>
-  <script src="addon/selection/mark-selection.js"></script> 
-
+<script src="keymap/vim.js"></script>
+<script src="mode/clike/clike.js"></script>
+<script src="mode/css/css.js"></script>
+<script src="mode/htmlmixed/htmlmixed.js"></script>
+<script src="mode/xml/xml.js"></script>
+<script src="mode/php/php.js"></script>
+<script src="mode/go/go.js"></script>
+<script src="mode/ruby/ruby.js"></script>
+<script src="mode/sql/sql.js"></script>
+<script src="addon/search/searchcursor.js"></script>
+<script src="addon/search/search.js"></script>
+<script src="addon/dialog/dialog.js"></script>
+<script src="addon/edit/matchbrackets.js"></script>
+<script src="addon/edit/closebrackets.js"></script>
+<script src="addon/comment/comment.js"></script>
+<script src="addon/wrap/hardwrap.js"></script>
+<script src="addon/fold/foldcode.js"></script>
+<script src="addon/fold/brace-fold.js"></script>
+<script src="addon/selection/active-line.js"></script>
+<script src="addon/fold/foldcode.js"></script>
+<script src="addon/fold/foldgutter.js"></script>
+<script src="addon/fold/brace-fold.js"></script>
+<script src="addon/fold/xml-fold.js"></script>
+<script src="addon/fold/markdown-fold.js"></script>
+<script src="addon/fold/comment-fold.js"></script>
+<script src="addon/search/searchcursor.js"></script>
+<script src="addon/selection/mark-selection.js"></script>
 
