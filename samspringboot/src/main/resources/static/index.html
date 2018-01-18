@@ -425,7 +425,9 @@
     client.on('stream-subscribed', function (evt) {
       var stream = evt.stream;
       console.log("Subscribe remote stream successfully: " + stream.getId());
-
+      if ($('div#video #agora_remote'+stream.getId()).length === 0) {
+        $('div#video').append('<div id="agora_remote'+stream.getId()+'" style="float:left; width:210px;height:147px;display:inline-block;"></div>');
+      }
       stream.play('agora_remote' + stream.getId());
     });
 

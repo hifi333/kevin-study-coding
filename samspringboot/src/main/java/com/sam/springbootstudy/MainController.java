@@ -3,6 +3,8 @@ package com.sam.springbootstudy;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 
 import javax.websocket.OnMessage;
@@ -121,18 +123,24 @@ public class MainController {
 
         try{
             File classlogDir = new File(foldername);
+//            File classlogDir = new File("/Users/eviewlake/Documents/tianfangskill/kevin-computer/kevin-study-coding/samspringboot");
+
             if(classlogDir.isDirectory())//判断file是否是目录
             {
                // System.out.println("is dir");
                 File [] classloglists = classlogDir.listFiles();
+                Arrays.sort(classloglists, new MainController.CompratorByLastModified()); //事件排序
+
                 if(classloglists!=null)
                 {
                     for(int i=0;i<classloglists.length;i++)
                     {
 
+                        if(classloglists[i].isDirectory()) continue;;
                         String filename = classloglists[i].getName();
                         String oneclass = readTxtFile(classloglists[i]);
 
+                       // System.out.println(filename);
                         int save = oneclass.indexOf("#saveclass#");
                         if(save != -1)
                         {
@@ -200,10 +208,25 @@ public class MainController {
     }
 
 
+    private static class CompratorByLastModified implements Comparator<File> {
+        public int compare(File f1, File f2) {
+            long diff = f1.lastModified()-f2.lastModified();
+            if(diff>0)
+                return -1;
+            else if(diff==0)
+                return 0;
+            else
+                return 1;
+        }
+        public boolean equals(Object obj){
+            return true;
+        }
+    }
 
 
 
-public  static void main(String args[])
+
+    public  static void main(String args[])
     {
 
         MainController  a = new MainController();
@@ -211,6 +234,10 @@ public  static void main(String args[])
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         System.out.println(df.format(new Date()));
+
+        String classlogfilenamelist = a.getclassloglist();
+
+        System.out.println(classlogfilenamelist);
 
     }
 
